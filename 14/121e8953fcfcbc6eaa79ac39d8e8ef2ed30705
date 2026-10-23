@@ -1,0 +1,25 @@
+.github/workflows/ci.yml
+  s_77c0fe299a7b50::t_74cf9979ae15be 46-63
+action.yml
+  s_77c0fe299a7b50::t_8bf6447223759a 79-80
+docs/examples/galaxy.svg
+  s_77c0fe299a7b50::t_d6ddbf0eb58182 1
+internal/card/galaxy/galaxy.go
+  s_77c0fe299a7b50::t_de661dc8167106 160-162,170-173,235
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "14121e8953fcfcbc6eaa79ac39d8e8ef2ed30705",
+  "prompts": {},
+  "sessions": {
+    "s_77c0fe299a7b50": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "538d7c09-d799-4bc7-855c-d5cf2e564ed1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marius Schröder <git@schroeder.systems>"
+    }
+  }
+}
