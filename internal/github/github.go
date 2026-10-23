@@ -62,6 +62,10 @@ func (c *Client) Fetch(ctx context.Context, req Request) (*model.Snapshot, error
 		}
 	}
 
+	if s.Years, err = c.years(ctx, u.Login, u.CreatedAt, today); err != nil {
+		return nil, err
+	}
+
 	recentSince := today.AddDate(0, 0, -13)
 	var recent []string // repositories with commits in the last 14 days, as owner/name
 	for _, rc := range u.Contributions.ByRepository {
@@ -102,6 +106,43 @@ func (c *Client) Fetch(ctx context.Context, req Request) (*model.Snapshot, error
 		s.CommitTimes = append(s.CommitTimes, times...)
 	}
 	return s, nil
+}
+
+// years returns the contribution total of every calendar year since the
+// account was created, in one request with an aliased field per year.
+func (c *Client) years(ctx context.Context, login string, joined, today time.Time) ([]model.Year, error) {
+	end := today.Add(24*time.Hour - time.Second)
+	var q strings.Builder
+	q.WriteString("query($login: String!) { user(login: $login) {")
+	for y := joined.Year(); y <= today.Year(); y++ {
+		from := time.Date(y, 1, 1, 0, 0, 0, 0, time.UTC)
+		if from.Before(joined) {
+			from = joined.UTC()
+		}
+		to := time.Date(y, 12, 31, 23, 59, 59, 0, time.UTC)
+		if to.After(end) {
+			to = end
+		}
+		fmt.Fprintf(&q, " y%d: contributionsCollection(from: %q, to: %q) { contributionCalendar { totalContributions } }",
+			y, from.Format(time.RFC3339), to.Format(time.RFC3339))
+	}
+	q.WriteString(" } }")
+
+	var res struct {
+		User map[string]struct {
+			Calendar struct {
+				Total int `json:"totalContributions"`
+			} `json:"contributionCalendar"`
+		} `json:"user"`
+	}
+	if err := c.graphql(ctx, q.String(), map[string]any{"login": login}, &res); err != nil {
+		return nil, err
+	}
+	var out []model.Year
+	for y := joined.Year(); y <= today.Year(); y++ {
+		out = append(out, model.Year{Year: y, Count: res.User[fmt.Sprint("y", y)].Calendar.Total})
+	}
+	return out, nil
 }
 
 // commitTimes lists when the user committed to a repository since a date.
@@ -205,6 +246,7 @@ const userQuery = `query($login: String!, $from: DateTime!, $to: DateTime!) {
   user(login: $login) {
     login
     name
+    createdAt
     contributionsCollection(from: $from, to: $to) {
       contributionCalendar { weeks { contributionDays { date contributionCount } } }
       commitContributionsByRepository(maxRepositories: 100) {
@@ -229,8 +271,9 @@ const userQuery = `query($login: String!, $from: DateTime!, $to: DateTime!) {
 
 type userResponse struct {
 	User *struct {
-		Login         string `json:"login"`
-		Name          string `json:"name"`
+		Login         string    `json:"login"`
+		Name          string    `json:"name"`
+		CreatedAt     time.Time `json:"createdAt"`
 		Contributions struct {
 			Calendar struct {
 				Weeks []struct {

@@ -31,7 +31,7 @@ func TestRendersSelectedCardsFromASavedSnapshot(t *testing.T) {
 }
 
 func TestRejectsUnknownCardsAndMissingToken(t *testing.T) {
-	if err := run(context.Background(), []string{"-cards", "snake"}); err == nil || !strings.Contains(err.Error(), "available: galaxy,nightsky,kubectl") {
+	if err := run(context.Background(), []string{"-cards", "snake"}); err == nil || !strings.Contains(err.Error(), "available: galaxy,nightsky,kubectl,pulse,rings,forecast") {
 		t.Errorf("unknown card: err = %v", err)
 	}
 	t.Setenv("GALAXY_STATS_TOKEN", "")

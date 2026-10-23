@@ -1,10 +1,10 @@
 # galaxy-stats
 
-**Your GitHub activity, drawn as a galaxy, a night sky and a `kubectl top`.**
+**Your GitHub activity, drawn as a galaxy, a night sky, a `kubectl top` and more.**
 Rendered by a GitHub Action inside your own repository. No server, no third-party service, no gaps.
 
 <p align="center">
-  <img src="docs/examples/galaxy.svg" alt="Galaxy card: repositories as star systems" width="720">
+  <img src="docs/examples/galaxy.svg" alt="Galaxy card: repositories as planets in a spiral galaxy" width="760">
 </p>
 <p align="center">
   <img src="docs/examples/nightsky.svg" alt="Night sky card: every day a star, streaks as constellations" width="720">
@@ -13,12 +13,20 @@ Rendered by a GitHub Action inside your own repository. No server, no third-part
   <img src="docs/examples/kubectl.svg" alt="kubectl card: active repositories as containers" width="720">
 </p>
 
+<p align="center">
+  <img src="docs/examples/pulse.svg" alt="Pulse card: one heartbeat per day" width="360">
+  <img src="docs/examples/forecast.svg" alt="Forecast card: recent activity as a weather report" width="360">
+</p>
+<p align="center">
+  <img src="docs/examples/rings.svg" alt="Rings card: one growth ring per year on GitHub" width="360">
+</p>
+
 <sub>Examples rendered from generated demo data.</sub>
 
 ## Why another stats card?
 
 - **Runs where your profile lives.** A scheduled workflow renders SVG files and commits them to a branch of your repository. Nothing is hosted, nothing to rate-limit, nothing to shut down.
-- **Private work counts, private names don't.** With a token that can read your private repositories, their activity is included, but they show up as *uncharted systems* and *closed-source* containers. Names are dropped while fetching, before anything is rendered. You can opt in to showing them.
+- **Private work counts, private names don't.** With a token that can read your private repositories, their activity is included, but they show up as *uncharted systems* hidden in fog and as *closed-source* containers. Names are dropped while fetching, before anything is rendered. You can opt in to showing them.
 - **No empty sections.** Cards adapt to the data they get: the night sky skips quiet stretches before your activity starts, the galaxy maps whatever you worked on. No "unexpected error" boxes on your profile.
 - **Built on stable APIs.** Data comes from the contribution calendar and the commits API, not from event payloads that GitHub has been trimming. A weekly CI job renders real cards against the live API to catch changes early.
 - **Small and dependency-free.** A single Go binary using only the standard library, built from source at the exact commit you pin.
@@ -27,9 +35,14 @@ Rendered by a GitHub Action inside your own repository. No server, no third-part
 
 | Card | What it shows |
 |------|---------------|
-| `galaxy` | Repositories you committed to in the last 12 months as star systems. Size is the number of commits, colour the primary language, glow how recently it was pushed. Dashed hyperlanes connect repositories you worked on in the same week. |
+| `galaxy` | Repositories you committed to in the last 12 months as planets in a spiral galaxy. Size is the number of commits, the world type follows the primary language (ocean, desert, ice, jungle, lava, gas giant with rings), moons count active weeks, and a turning holo ring marks repositories pushed in the last two weeks. Hyperlanes connect repositories you worked on in the same weeks. |
 | `nightsky` | The last 26 weeks as a sky: every day is a star whose brightness is that day's contributions. Five or more active days in a row form a constellation. |
 | `kubectl` | `kubectl top` for you: active repositories as containers, with commits over 30 days as CPU, repository size as memory and breaks of more than a week as restarts. The footer shows commits per day and how much of your work happens after 22:00. Comes in `dark` and `light`. |
+| `pulse` | A heart monitor of the last 60 days: one heartbeat per day, its height the day's contributions, with a sweep line running across the screen. |
+| `rings` | Your years on GitHub as the growth rings of a tree, one ring per calendar year. Quiet years are narrow rings, not gaps. |
+| `forecast` | The last two weeks as a weather report: commits per day as the temperature, the chance of commits after 22:00, the languages moving in and where the storm is. |
+
+The action renders `galaxy`, `nightsky` and `kubectl` by default; list the ones you want in `cards`.
 
 ## Quick start
 
@@ -73,8 +86,8 @@ Without a token the action uses the workflow's `GITHUB_TOKEN` and renders your *
 
 To include private repositories, create a token and store it as the repository secret `GALAXY_STATS_TOKEN`:
 
-- **Fine-grained token** (least privilege): repository access *All repositories*, permissions *Contents: read-only* and *Metadata: read-only*.
-- **Classic token**: the `repo` scope. Use this if your private contributions do not show up with a fine-grained token.
+- **Classic token** with the `repo` scope. This is the tested setup.
+- A **fine-grained token** with read-only *Contents* and *Metadata* on all repositories is the least-privilege option, but GitHub may not count private contributions with it. If they are missing, use a classic token.
 
 The token is only used to read. Publishing uses the workflow's own credentials from `actions/checkout`.
 
@@ -84,7 +97,7 @@ The token is only used to read. Publishing uses the workflow's own credentials f
 |-------|---------|-------------|
 | `token` | `github.token` | Token used to read your activity. |
 | `user` | repository owner | GitHub login to render. |
-| `cards` | `galaxy,nightsky,kubectl` | Cards to render, comma-separated. |
+| `cards` | `galaxy,nightsky,kubectl` | Cards to render, comma-separated: any of `galaxy`, `nightsky`, `kubectl`, `pulse`, `rings`, `forecast`. |
 | `timezone` | `UTC` | IANA time zone for commit hours, e.g. `Europe/Berlin`. |
 | `theme` | `dark` | `dark` or `light`, for cards that support it. |
 | `display-name` | login | Name shown on the cards, e.g. in `kubectl top engineer <name>`. |

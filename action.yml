@@ -15,7 +15,7 @@ inputs:
     required: false
     default: ${{ github.repository_owner }}
   cards:
-    description: Comma-separated list of cards to render.
+    description: Comma-separated list of cards to render (galaxy, nightsky, kubectl, pulse, rings, forecast).
     required: false
     default: galaxy,nightsky,kubectl
   timezone:

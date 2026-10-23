@@ -19,6 +19,12 @@ func (d Day) Time() time.Time {
 	return t
 }
 
+// Year is the number of contributions in one calendar year.
+type Year struct {
+	Year  int `json:"year"`
+	Count int `json:"count"`
+}
+
 // Repo is a repository the user committed to during the snapshot window.
 // Name is empty for private repositories unless the user opted in to showing
 // them; cards must never try to recover it.
@@ -42,6 +48,7 @@ type Snapshot struct {
 	Calendar    []Day       `json:"calendar"`    // contribution calendar, ascending
 	Repos       []Repo      `json:"repos"`       // sorted by Commits, descending
 	CommitTimes []time.Time `json:"commitTimes"` // the user's commits of the last 14 days
+	Years       []Year      `json:"years"`       // contributions per year since joining, ascending
 }
 
 // Now returns Today as a time, so cards never read the wall clock.

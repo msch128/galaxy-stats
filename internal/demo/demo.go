@@ -78,6 +78,18 @@ func Snapshot() *model.Snapshot {
 	s.Repos = repos
 	s.SortRepos()
 
+	// Earlier years, then the year the demo window ends in.
+	for i, n := range []int{212, 488, 371, 902, 1307} {
+		s.Years = append(s.Years, model.Year{Year: 2021 + i, Count: n})
+	}
+	this := 0
+	for _, d := range s.Calendar {
+		if d.Time().Year() == Today.Year() {
+			this += d.Count
+		}
+	}
+	s.Years = append(s.Years, model.Year{Year: Today.Year(), Count: this})
+
 	loc, _ := time.LoadLocation(s.Timezone)
 	for _, d := range s.LastDays(14) {
 		for range d.Count {

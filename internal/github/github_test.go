@@ -12,9 +12,10 @@ import (
 
 	"github.com/msch128/galaxy-stats/internal/card"
 	"github.com/msch128/galaxy-stats/internal/cards"
+	"github.com/msch128/galaxy-stats/internal/model"
 )
 
-const fakeGraphQL = `{"data":{"user":{"login":"octo","name":"Octo","contributionsCollection":{
+const fakeGraphQL = `{"data":{"user":{"login":"octo","name":"Octo","createdAt":"2025-03-01T00:00:00Z","contributionsCollection":{
   "contributionCalendar":{"weeks":[{"contributionDays":[{"date":"2026-10-22","contributionCount":3},{"date":"2026-10-23","contributionCount":5}]}]},
   "commitContributionsByRepository":[
     {"repository":{"name":"secret-project","nameWithOwner":"octo/secret-project","owner":{"login":"octo"},"isPrivate":true,
@@ -37,6 +38,10 @@ func fakeAPI(t *testing.T) *httptest.Server {
 		switch {
 		case r.URL.Path == "/graphql":
 			body, _ := io.ReadAll(r.Body)
+			if strings.Contains(string(body), "totalContributions") {
+				io.WriteString(w, `{"data":{"user":{"y2025":{"contributionCalendar":{"totalContributions":40}},"y2026":{"contributionCalendar":{"totalContributions":8}}}}}`)
+				return
+			}
 			if !strings.Contains(string(body), `"login":"octo"`) {
 				t.Errorf("graphql variables missing login: %s", body)
 			}
@@ -112,6 +117,9 @@ func TestFetchKeepsCalendarAndCommitTimes(t *testing.T) {
 	}
 	if len(s.CommitTimes) != 2 { // one commit from each recently active repository
 		t.Errorf("commit times = %v", s.CommitTimes)
+	}
+	if len(s.Years) != 2 || s.Years[0] != (model.Year{Year: 2025, Count: 40}) || s.Years[1].Count != 8 {
+		t.Errorf("years = %+v", s.Years)
 	}
 }
 
