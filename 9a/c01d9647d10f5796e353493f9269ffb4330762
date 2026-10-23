@@ -1,0 +1,23 @@
+cmd/galaxy-stats/main.go
+  s_77c0fe299a7b50::t_b15c409ed9a4e3 108
+go.mod
+  s_77c0fe299a7b50::t_3e033de389fa15 3
+internal/github/github.go
+  s_77c0fe299a7b50::t_b0ffb41a26e9ae 16,86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9ac01d9647d10f5796e353493f9269ffb4330762",
+  "prompts": {},
+  "sessions": {
+    "s_77c0fe299a7b50": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "538d7c09-d799-4bc7-855c-d5cf2e564ed1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marius Schröder <git@schroeder.systems>"
+    }
+  }
+}
