@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: msch128/galaxy-stats@<commit-sha> # pin a release commit
+      - uses: msch128/galaxy-stats@14121e8953fcfcbc6eaa79ac39d8e8ef2ed30705 # v1.0.0
         with:
           token: ${{ secrets.GALAXY_STATS_TOKEN }} # optional, see below
           timezone: Europe/Berlin
