@@ -105,7 +105,7 @@ func fetch(ctx context.Context, user, tz string, showPrivate bool) (*model.Snaps
 
 func pick(list string) ([]card.Card, error) {
 	var out []card.Card
-	for _, id := range strings.Split(list, ",") {
+	for id := range strings.SplitSeq(list, ",") {
 		id = strings.TrimSpace(id)
 		if id == "" {
 			continue

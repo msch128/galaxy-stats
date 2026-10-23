@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -82,8 +83,7 @@ func (c *Client) Fetch(ctx context.Context, req Request) (*model.Snapshot, error
 				repo.Name = r.NameWithOwner
 			}
 		}
-		for i := len(rc.Contributions.Nodes) - 1; i >= 0; i-- { // API order is newest first
-			n := rc.Contributions.Nodes[i]
+		for _, n := range slices.Backward(rc.Contributions.Nodes) { // API order is newest first
 			day := n.OccurredAt.UTC().Format(time.DateOnly)
 			repo.Days = append(repo.Days, model.Day{Date: day, Count: n.CommitCount})
 		}
