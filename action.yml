@@ -76,4 +76,5 @@ runs:
       working-directory: ${{ github.workspace }}
       env:
         GS_BRANCH: ${{ inputs.branch }}
-      run: "$GITHUB_ACTION_PATH/scripts/publish.sh" "$RUNNER_TEMP/galaxy-stats-cards" "$GS_BRANCH"
+      run: |
+        "$GITHUB_ACTION_PATH/scripts/publish.sh" "$RUNNER_TEMP/galaxy-stats-cards" "$GS_BRANCH"

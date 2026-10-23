@@ -157,15 +157,19 @@ func layout(s *model.Snapshot, repos []model.Repo) []system {
 			repo:   r,
 			label:  shorten(label, 26),
 			detail: detail(r),
-			x:      380 + d*math.Cos(a)*1.45,
-			y:      228 + d*math.Sin(a)*.66,
-			r:      4 + 20*math.Sqrt(float64(r.Commits)/float64(peak)),
+			x:      round(380 + d*math.Cos(a)*1.45),
+			y:      round(228 + d*math.Sin(a)*.66),
+			r:      round(4 + 20*math.Sqrt(float64(r.Commits)/float64(peak))),
 			heat:   math.Max(.25, 1-age/90),
 			weeks:  weeks(r.Days),
 		}
 	}
 	return out
 }
+
+// round snaps a coordinate to a hundredth of a pixel, so floating-point
+// differences between CPU architectures cannot change the layout.
+func round(v float64) float64 { return math.Round(v*100) / 100 }
 
 func detail(r model.Repo) string {
 	out := fmt.Sprintf("%d commits", r.Commits)
@@ -228,7 +232,7 @@ func placeLabels(systems []system) []label {
 			outside := c.b.x1 - c.b.x0
 			outside = outside*(c.b.y1-c.b.y0) - c.b.overlap(bounds)
 			cost += outside * 4
-			if cost < bestCost {
+			if cost < bestCost-.5 { // ties keep the earlier, preferred side
 				best, bestCost = k, cost
 			}
 		}

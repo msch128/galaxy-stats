@@ -43,3 +43,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: go run ./cmd/galaxy-stats -user "${{ github.repository_owner }}" -out "$RUNNER_TEMP/cards"
+
+  action:
+    # Runs the action end to end, including publishing, the way users run it.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./
+        with:
+          branch: ci-preview
+      - name: Check published cards
+        run: |
+          git fetch --quiet --depth=1 origin ci-preview
+          for card in galaxy nightsky kubectl; do
+            git show "FETCH_HEAD:$card.svg" | head -c 4 | grep -q '<svg'
+          done
