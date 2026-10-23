@@ -1,0 +1,79 @@
+name: galaxy-stats
+description: Render GitHub profile cards (galaxy, night sky, kubectl top) as SVG and publish them to a branch of your repository.
+author: msch128
+branding:
+  icon: star
+  color: purple
+
+inputs:
+  token:
+    description: Token used to read your activity. A fine-grained or classic token that can read your repositories also counts private contributions; the default GITHUB_TOKEN sees public activity only.
+    required: false
+    default: ${{ github.token }}
+  user:
+    description: GitHub login to render.
+    required: false
+    default: ${{ github.repository_owner }}
+  cards:
+    description: Comma-separated list of cards to render.
+    required: false
+    default: galaxy,nightsky,kubectl
+  timezone:
+    description: IANA time zone used for commit hours, e.g. Europe/Berlin.
+    required: false
+    default: UTC
+  theme:
+    description: Colour theme for cards that support it (kubectl), dark or light.
+    required: false
+    default: dark
+  display-name:
+    description: Name shown on the cards. Defaults to the login.
+    required: false
+    default: ""
+  show-private-names:
+    description: Show the names of private repositories instead of anonymising them.
+    required: false
+    default: "false"
+  branch:
+    description: Branch the SVG files are published to. It holds a single commit that is replaced whenever a card changes.
+    required: false
+    default: galaxy-stats
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      with:
+        go-version-file: ${{ github.action_path }}/go.mod
+        cache: false
+
+    - name: Build
+      shell: bash
+      run: go build -C "$GITHUB_ACTION_PATH" -trimpath -o "$RUNNER_TEMP/galaxy-stats" ./cmd/galaxy-stats
+
+    - name: Render
+      shell: bash
+      env:
+        GALAXY_STATS_TOKEN: ${{ inputs.token }}
+        GS_USER: ${{ inputs.user }}
+        GS_CARDS: ${{ inputs.cards }}
+        GS_TIMEZONE: ${{ inputs.timezone }}
+        GS_THEME: ${{ inputs.theme }}
+        GS_DISPLAY_NAME: ${{ inputs.display-name }}
+        GS_SHOW_PRIVATE: ${{ inputs.show-private-names }}
+      run: |
+        "$RUNNER_TEMP/galaxy-stats" \
+          -user "$GS_USER" \
+          -cards "$GS_CARDS" \
+          -timezone "$GS_TIMEZONE" \
+          -theme "$GS_THEME" \
+          -display-name "$GS_DISPLAY_NAME" \
+          -show-private-names="$GS_SHOW_PRIVATE" \
+          -out "$RUNNER_TEMP/galaxy-stats-cards"
+
+    - name: Publish
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        GS_BRANCH: ${{ inputs.branch }}
+      run: "$GITHUB_ACTION_PATH/scripts/publish.sh" "$RUNNER_TEMP/galaxy-stats-cards" "$GS_BRANCH"
