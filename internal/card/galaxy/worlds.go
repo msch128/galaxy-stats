@@ -12,14 +12,17 @@ type world struct {
 	blend         bool    // soft two-colour blend instead of hard-edged shapes
 	cracks        bool    // ridged noise, for lava and ice fissures
 	clouds        bool    // white cloud layer
+	caps          bool    // polar ice caps
+	icy           bool    // often has a thin ring
+	habitable     bool    // shows city lights when active
 }
 
 var (
-	ocean  = world{base: "#0d4f8f", surface: "#3f9a63", glow: "#6fc3ff", detail: 2.2, sharp: 7, cut: -3.4, clouds: true}
-	terran = world{base: "#1c5f86", surface: "#b39b62", glow: "#9fd2ff", detail: 2.0, sharp: 7, cut: -3.3, clouds: true}
-	jungle = world{base: "#1f6b45", surface: "#7cc76a", glow: "#a6f0b4", detail: 2.6, blend: true, clouds: true}
-	desert = world{base: "#b8743c", surface: "#f0c58a", glow: "#ffd9a8", detail: 1.6, blend: true}
-	ice    = world{base: "#d8ecff", surface: "#6c9fd4", glow: "#e2f3ff", detail: 1.8, sharp: 9, cut: -1.2, cracks: true}
+	ocean  = world{base: "#0d4f8f", surface: "#3f9a63", glow: "#6fc3ff", detail: 2.2, sharp: 7, cut: -3.4, clouds: true, caps: true, habitable: true}
+	terran = world{base: "#1c5f86", surface: "#b39b62", glow: "#9fd2ff", detail: 2.0, sharp: 7, cut: -3.3, clouds: true, caps: true, habitable: true}
+	jungle = world{base: "#1f6b45", surface: "#7cc76a", glow: "#a6f0b4", detail: 2.6, blend: true, clouds: true, habitable: true}
+	desert = world{base: "#b8743c", surface: "#f0c58a", glow: "#ffd9a8", detail: 1.6, blend: true, habitable: true}
+	ice    = world{base: "#d8ecff", surface: "#6c9fd4", glow: "#e2f3ff", detail: 1.8, sharp: 9, cut: -1.2, cracks: true, icy: true}
 	lava   = world{base: "#2a0d08", surface: "#ff6a1f", glow: "#ff8a4c", detail: 1.5, sharp: 10, cut: -1.6, cracks: true}
 	rock   = world{base: "#6d6a78", surface: "#a7a3b4", glow: "#c9c5d9", detail: 2.4, blend: true}
 )

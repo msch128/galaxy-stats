@@ -35,7 +35,7 @@ Rendered by a GitHub Action inside your own repository. No server, no third-part
 
 | Card | What it shows |
 |------|---------------|
-| `galaxy` | Repositories you committed to in the last 12 months as planets in a spiral galaxy. Size is the number of commits, the world type follows the primary language (ocean, desert, ice, jungle, lava, gas giant with rings), moons count active weeks, and a turning holo ring marks repositories pushed in the last two weeks. Hyperlanes connect repositories you worked on in the same weeks. |
+| `galaxy` | Repositories you committed to in the last 12 months as planets in a spiral galaxy. Size is the number of commits and the world type follows the primary language: ocean, desert, ice, jungle and lava worlds, gas giants with storms. Planets turn at their own pace, some retrograde; rings come in Saturn-like, thin and double variants; moons orbit once per six active weeks; your busiest world gets an orbital station, and active habitable worlds light up at night. A turning holo ring marks repositories pushed in the last two weeks, and hyperlanes connect repositories you worked on in the same weeks. |
 | `nightsky` | The last 26 weeks as a sky: every day is a star whose brightness is that day's contributions. Five or more active days in a row form a constellation. |
 | `kubectl` | `kubectl top` for you: active repositories as containers, with commits over 30 days as CPU, repository size as memory and breaks of more than a week as restarts. The footer shows commits per day and how much of your work happens after 22:00. Comes in `dark` and `light`. |
 | `pulse` | A heart monitor of the last 60 days: one heartbeat per day, its height the day's contributions, with a sweep line running across the screen. |

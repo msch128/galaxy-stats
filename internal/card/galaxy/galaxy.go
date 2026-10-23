@@ -80,12 +80,26 @@ func (Card) Render(s *model.Snapshot, o card.Options) ([]byte, error) {
 		`.gx-flow{animation:gx-flow 3s linear infinite}@keyframes gx-flow{to{stroke-dashoffset:-28}}` +
 		`.gx-spin{transform-box:fill-box;transform-origin:center;animation:gx-spin 18s linear infinite}@keyframes gx-spin{to{transform:rotate(360deg)}}` +
 		`.gx-core{animation:gx-core 6s ease-in-out infinite}@keyframes gx-core{50%{opacity:.75}}` +
-		`@media (prefers-reduced-motion:reduce){.gx-flow,.gx-spin,.gx-core{animation:none}}</style>`)
+		`.gx-shoot{opacity:0;animation:gx-shoot 11s ease-in infinite}@keyframes gx-shoot{0%,90%{opacity:0;transform:translate(0,0)}93%{opacity:1}100%{opacity:0;transform:translate(-140px,60px)}}` +
+		`@media (prefers-reduced-motion:reduce){.gx-flow,.gx-spin,.gx-core,.gx-turn,.gx-shoot{animation:none!important}}</style>`)
+
+	// The busiest named world gets an orbital station.
+	station := -1
+	for i, p := range planets {
+		if p.repo.Name != "" {
+			station = i
+			break
+		}
+	}
+	looks := make([]look, len(planets))
+	for i, p := range planets {
+		looks[i] = lookFor(s, p, i == station)
+	}
 
 	doc.Raw(`<defs>`)
 	sharedDefs(doc, s)
 	for i, p := range planets {
-		planetDefs(doc, s, i, p)
+		planetDefs(doc, s, i, p, looks[i])
 	}
 	doc.Raw(`</defs>`)
 
@@ -93,7 +107,7 @@ func (Card) Render(s *model.Snapshot, o card.Options) ([]byte, error) {
 	backdrop(doc, s)
 	lanes(doc, planets)
 	for i, p := range planets {
-		drawPlanet(doc, i, p)
+		drawPlanet(doc, i, p, looks[i])
 	}
 	for i, l := range placeLabels(planets) {
 		drawLabel(doc, planets[i], l)
@@ -122,6 +136,8 @@ func sharedDefs(doc *svg.Doc, s *model.Snapshot) {
 	doc.Raw(`<radialGradient id="gx-fogfade"><stop offset=".25" stop-color="#b9b2e6"/><stop offset="1" stop-color="#b9b2e6" stop-opacity="0"/></radialGradient>`)
 	doc.Raw(`<filter id="gx-blur8" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8"/></filter>`)
 	doc.Raw(`<filter id="gx-blur2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2"/></filter>`)
+	doc.Raw(`<filter id="gx-blur1" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1"/></filter>`)
+	doc.Raw(`<linearGradient id="gx-tail" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#bfe6ff" stop-opacity=".8"/><stop offset="1" stop-color="#bfe6ff" stop-opacity="0"/></linearGradient>`)
 	seed := card.Rand(s, "galaxy-seed").IntN(900) + 1
 	// Nebulae: fractal noise tinted violet and teal, faded towards the edges by a mask.
 	doc.F(`<filter id="gx-nebula" x="0" y="0" width="100%%" height="100%%" color-interpolation-filters="sRGB">`+
@@ -163,6 +179,14 @@ func backdrop(doc *svg.Doc, s *model.Snapshot) {
 			c := []string{"#ffffff", "#dfe7ff", "#ffe9c9", "#ffd1ea"}[arms.IntN(4)]
 			doc.F(`<circle cx="%.1f" cy="%.1f" r="%.2f" fill="%s" fill-opacity="%.2f"/>`, x, y, .3+arms.Float64()*.9, c, .35+arms.Float64()*.6)
 		}
+	}
+	// A comet drifting through the outer system, and two shooting stars.
+	cx, cy := 90+rnd.Float64()*120, 70+rnd.Float64()*40
+	doc.F(`<g transform="translate(%.0f %.0f) rotate(24)"><animateTransform attributeName="transform" type="translate" additive="sum" values="0 0;26 9;0 0" dur="40s" repeatCount="indefinite"/>`+
+		`<path d="M0 -2.2L64 -.4V.4L0 2.2Z" fill="url(#gx-tail)"/><circle r="2.4" fill="#f2fbff"/><circle r="5" fill="#bfe6ff" fill-opacity=".35" filter="url(#gx-blur2)"/></g>`, cx, cy)
+	for k, d := range []float64{0, 5.5} {
+		sx, sy := width*.62+float64(k)*120, 60+float64(k)*190
+		doc.F(`<path class="gx-shoot" style="animation-delay:%.1fs" d="M%.0f %.0fl26 -11" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/>`, d, sx, sy)
 	}
 	doc.F(`<g class="gx-core"><ellipse cx="%.0f" cy="%.0f" rx="92" ry="44" fill="url(#gx-core)" transform="rotate(%.1f %.0f %.0f)"/>`+
 		`<circle cx="%.0f" cy="%.0f" r="7" fill="#fffaf0" filter="url(#gx-blur2)"/></g>`, coreX, coreY, tilt*180/math.Pi, coreX, coreY, coreX, coreY)
@@ -289,101 +313,6 @@ func lanes(doc *svg.Doc, ps []planet) {
 		if strength > .35 {
 			doc.F(`<path class="gx-flow" d="%s" fill="none" stroke="#e8f7ff" stroke-width="1.4" stroke-linecap="round" stroke-dasharray="2 26" stroke-opacity=".9"/>`, path)
 		}
-	}
-}
-
-// planetDefs defines a planet's surface filters, atmosphere and clip path.
-func planetDefs(doc *svg.Doc, s *model.Snapshot, i int, p planet) {
-	w := p.world
-	seed := card.Rand(s, fmt.Sprint("planet-", i)).IntN(900) + 1
-	freq := w.detail / p.r
-	baseFreq := fmt.Sprintf("%.4f", freq)
-	if w.gas {
-		baseFreq = fmt.Sprintf("%.4f %.4f", freq*.12, freq*1.6) // stretched noise reads as cloud bands
-	} else if w.blend {
-		baseFreq = fmt.Sprintf("%.4f %.4f", freq*.55, freq*1.3) // slightly stretched: dunes, canopy, ridges
-	}
-	a, b := rgb(w.surface), rgb(w.base)
-	if w.gas || w.blend {
-		// Blend the two colours by the noise value for soft, continuous surfaces;
-		// the gain stretches the noise's narrow value range over both colours.
-		doc.F(`<filter id="gx-tex%d" x="0" y="0" width="100%%" height="100%%" color-interpolation-filters="sRGB">`+
-			`<feTurbulence type="fractalNoise" baseFrequency="%s" numOctaves="4" seed="%d"/>`+
-			`<feColorMatrix values="%.3f 0 0 0 %.3f  %.3f 0 0 0 %.3f  %.3f 0 0 0 %.3f  0 0 0 0 1"/>`+
-			`<feComposite in2="SourceGraphic" operator="in"/></filter>`,
-			i, baseFreq, seed, (a[0]-b[0])*w.gain(), b[0]-(a[0]-b[0])*w.offset(), (a[1]-b[1])*w.gain(), b[1]-(a[1]-b[1])*w.offset(), (a[2]-b[2])*w.gain(), b[2]-(a[2]-b[2])*w.offset())
-	} else {
-		// Threshold the noise into sharp-edged continents, ice sheets or lava cracks.
-		kind := "fractalNoise"
-		if w.cracks {
-			kind = "turbulence"
-		}
-		doc.F(`<filter id="gx-tex%d" x="0" y="0" width="100%%" height="100%%" color-interpolation-filters="sRGB">`+
-			`<feTurbulence type="%s" baseFrequency="%s" numOctaves="4" seed="%d"/>`+
-			`<feColorMatrix values="0 0 0 0 %.3f  0 0 0 0 %.3f  0 0 0 0 %.3f  %.1f 0 0 0 %.2f"/>`+
-			`<feComposite in2="SourceGraphic" operator="in"/></filter>`,
-			i, kind, baseFreq, seed, a[0], a[1], a[2], w.sharp, w.cut)
-	}
-	if w.clouds {
-		doc.F(`<filter id="gx-cl%d" x="0" y="0" width="100%%" height="100%%" color-interpolation-filters="sRGB">`+
-			`<feTurbulence type="fractalNoise" baseFrequency="%.4f %.4f" numOctaves="3" seed="%d"/>`+
-			`<feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  3.2 0 0 0 -1.75"/>`+
-			`<feComposite in2="SourceGraphic" operator="in"/></filter>`, i, freq*.8, freq*1.6, seed+31)
-	}
-	doc.F(`<radialGradient id="gx-atm%d"><stop offset=".78" stop-color="%s" stop-opacity="0"/><stop offset=".9" stop-color="%s" stop-opacity=".55"/>`+
-		`<stop offset="1" stop-color="%s" stop-opacity="0"/></radialGradient>`, i, w.glow, w.glow, w.glow)
-	doc.F(`<clipPath id="gx-clip%d"><circle cx="%.1f" cy="%.1f" r="%.1f"/></clipPath>`, i, p.x, p.y, p.r)
-}
-
-func drawPlanet(doc *svg.Doc, i int, p planet) {
-	w := p.world
-	ringRX, ringRY := p.r*2.05, p.r*.5
-	opacity := 1.0
-	if p.repo.Name == "" {
-		opacity = .7
-	}
-	doc.F(`<g opacity="%.2f">`, opacity)
-	if p.active { // turning holo ring beneath active systems
-		doc.F(`<ellipse class="gx-spin" cx="%.1f" cy="%.1f" rx="%.1f" ry="%.1f" fill="none" stroke="%s" stroke-opacity=".55" stroke-dasharray="10 5 2 5"/>`,
-			p.x, p.y+p.r*.15, p.r*1.75, p.r*1.75*.38, hudColor)
-	}
-	doc.F(`<circle cx="%.1f" cy="%.1f" r="%.1f" fill="url(#gx-atm%d)"/>`, p.x, p.y, p.r*1.28, i)
-	if w.gas { // back half of the ring
-		ringArc(doc, p, ringRX, ringRY, true)
-	}
-	doc.F(`<circle cx="%.1f" cy="%.1f" r="%.1f" fill="%s"/>`, p.x, p.y, p.r, w.base)
-	doc.F(`<circle cx="%.1f" cy="%.1f" r="%.1f" fill="#000" filter="url(#gx-tex%d)"/>`, p.x, p.y, p.r, i)
-	if w.cracks {
-		doc.F(`<circle cx="%.1f" cy="%.1f" r="%.1f" fill="none" stroke="%s" stroke-opacity=".5" filter="url(#gx-blur2)" clip-path="url(#gx-clip%d)"/>`, p.x, p.y, p.r*.8, w.surface, i)
-	}
-	if w.clouds {
-		doc.F(`<circle cx="%.1f" cy="%.1f" r="%.1f" fill="#000" filter="url(#gx-cl%d)" opacity=".85"/>`, p.x, p.y, p.r, i)
-	}
-	doc.F(`<circle cx="%.1f" cy="%.1f" r="%.1f" fill="url(#gx-shade)"/>`, p.x, p.y, p.r)
-	if w.gas { // front half of the ring
-		ringArc(doc, p, ringRX, ringRY, false)
-	}
-	for m := range p.moons {
-		a := 2.3 + float64(m)*1.9
-		mx, my := p.x+math.Cos(a)*p.r*1.75, p.y+math.Sin(a)*p.r*.95
-		mr := math.Max(1.8, p.r*.13)
-		doc.F(`<circle cx="%.1f" cy="%.1f" r="%.1f" fill="#cfc8e8"/><circle cx="%.1f" cy="%.1f" r="%.1f" fill="url(#gx-shade)"/>`, mx, my, mr, mx, my, mr)
-	}
-	doc.Raw(`</g>`)
-	if p.repo.Name == "" { // fog of war over uncharted systems
-		doc.F(`<circle cx="%.1f" cy="%.1f" r="%.1f" fill="url(#gx-fogfade)" filter="url(#gx-fog)" opacity=".8"/>`, p.x, p.y, p.r*2.1)
-	}
-}
-
-// ringArc draws the back (behind the planet) or front half of a ring system.
-func ringArc(doc *svg.Doc, p planet, rx, ry float64, back bool) {
-	sweep := 1
-	if back {
-		sweep = 0
-	}
-	for k, sc := range []float64{1, .86, .74} {
-		doc.F(`<path d="M%.1f %.1fA%.1f %.1f 0 0 %d %.1f %.1f" fill="none" stroke="%s" stroke-width="%.1f" stroke-opacity="%.2f" transform="rotate(-14 %.1f %.1f)"/>`,
-			p.x-rx*sc, p.y, rx*sc, ry*sc, sweep, p.x+rx*sc, p.y, p.world.ring, 2.4-float64(k)*.6, .75-float64(k)*.18, p.x, p.y)
 	}
 }
 
